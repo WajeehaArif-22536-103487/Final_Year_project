@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Layout from "../../layouts/DashboardLayout";
 import API from "../../services/api";
 import { toast } from "react-toastify";
-import { Eye, Search, BookOpen, User, Calendar, ExternalLink, Award } from "lucide-react";
+import { 
+  Eye, Search, BookOpen, User, Calendar, ExternalLink, Award, 
+  Video, FileText, Github 
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 const ITEMS_PER_PAGE = 6;
@@ -13,16 +16,14 @@ const ProjectManagement = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch projects
   const fetchProjects = async () => {
     try {
       setLoading(true);
       const res = await API.get("/admin/projects");
-      console.log("Fetched projects:", res.data); // Debug log
+      console.log("Fetched projects:", res.data);
       
       let projectsData = res.data?.projects || res.data || [];
       
-      // Make sure each project has a title
       projectsData = projectsData.map(project => ({
         ...project,
         displayTitle: project.title || project.proposal?.title || "Untitled Project"
@@ -42,7 +43,6 @@ const ProjectManagement = () => {
     fetchProjects();
   }, []);
 
-  // Search Filter
   const filteredProjects = projects.filter((p) => {
     const title = p.displayTitle || p?.title || p?.proposal?.title || "";
     const studentName = p?.student?.name || "";
@@ -53,20 +53,16 @@ const ProjectManagement = () => {
     );
   });
 
-  // Pagination Logic
   const totalPages = Math.ceil(filteredProjects.length / ITEMS_PER_PAGE);
   const displayedProjects = filteredProjects.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Helper functions
   const getProjectTitle = (project) => {
-    // Try multiple sources for the title
     if (project.displayTitle) return project.displayTitle;
     if (project.title) return project.title;
     if (project.proposal?.title) return project.proposal.title;
-    if (project.proposalTitle) return project.proposalTitle;
     return "Untitled Project";
   };
 
@@ -80,6 +76,21 @@ const ProjectManagement = () => {
 
   const getRepositoryLink = (project) => {
     return project?.repositoryLink || project?.sourceLink || null;
+  };
+
+  const getDemoVideoLink = (project) => {
+    return project?.demoVideoLink || null;
+  };
+
+  const getReportFile = (project) => {
+    return project?.reportFile || null;
+  };
+
+  const getFullFileUrl = (filePath) => {
+    if (!filePath) return null;
+    if (filePath.startsWith('http')) return filePath;
+    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+    return `${API_URL.replace('/api', '')}${filePath}`;
   };
 
   return (
@@ -97,7 +108,6 @@ const ProjectManagement = () => {
             </p>
           </div>
 
-          {/* Search Box */}
           <div className="relative w-full sm:w-64 md:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
@@ -112,14 +122,12 @@ const ProjectManagement = () => {
           </div>
         </div>
 
-        {/* Loading */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-teal"></div>
           </div>
         ) : (
           <>
-            {/* Project Grid */}
             {displayedProjects.length === 0 ? (
               <div className="text-center py-16 sm:py-20 opacity-50">
                 <BookOpen size={48} className="mx-auto mb-3" />
@@ -154,25 +162,54 @@ const ProjectManagement = () => {
                       </div>
                     </div>
 
+                    {/* GitHub Link */}
+                    {getRepositoryLink(project) && (
+                      <div className="mt-3">
+                        <a
+                          href={getRepositoryLink(project)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-brand-teal font-bold hover:underline text-xs"
+                        >
+                          <Github size={12} /> View Repository
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Demo Video Link */}
+                    {getDemoVideoLink(project) && (
+                      <div className="mt-2">
+                        <a
+                          href={getDemoVideoLink(project)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-purple-600 font-bold hover:underline text-xs"
+                        >
+                          <Video size={12} /> Watch Demo Video
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Thesis Report */}
+                    {getReportFile(project) && (
+                      <div className="mt-2">
+                        <a
+                          href={getFullFileUrl(getReportFile(project))}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-indigo-600 font-bold hover:underline text-xs"
+                        >
+                          <FileText size={12} /> Download Report
+                        </a>
+                      </div>
+                    )}
+
                     {/* Grade Badge */}
                     {project.grade && (
                       <div className="mt-3 inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-xs font-bold text-purple-700">
                         <Award size={12} />
                         Grade: {project.grade}
                       </div>
-                    )}
-
-                    {/* Repository Link */}
-                    {getRepositoryLink(project) && (
-                      <a
-                        href={getRepositoryLink(project)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 sm:gap-2 text-brand-teal font-bold hover:underline mt-3 sm:mt-4 text-xs sm:text-sm"
-                      >
-                        <ExternalLink size={14} />
-                        View Repository
-                      </a>
                     )}
                   </motion.div>
                 ))}

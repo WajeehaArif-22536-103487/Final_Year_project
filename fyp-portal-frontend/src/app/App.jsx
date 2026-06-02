@@ -5,6 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 // Auth Pages
 import Login from "../pages/auth/Login";
 import ClaimAccount from "../pages/auth/ClaimAccount";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
 
 // Admin Pages
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -38,6 +40,8 @@ function App() {
           {/* Public */}
           <Route path="/" element={<Login />} />
           <Route path="/claim-account" element={<ClaimAccount />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* Admin */}
           <Route

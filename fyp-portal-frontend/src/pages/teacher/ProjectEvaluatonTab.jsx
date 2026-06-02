@@ -98,6 +98,26 @@ const AssignedGroupsList = ({ projects = [], loadProjects, token }) => {
     return project.sourceLink || project.filePath || null;
   };
 
+  const getDemoVideoLink = (project) => {
+    return project.demoVideoLink || null;
+  };
+
+  const getDemoVideoFile = (project) => {
+    return project.demoVideoFile || null;
+  };
+
+  const getReportFile = (project) => {
+    return project.reportFile || null;
+  };
+
+  const getFullFileUrl = (filePath) => {
+    if (!filePath) return null;
+    // If it's already a full URL, return as is
+    if (filePath.startsWith("http")) return filePath;
+    // Otherwise, prepend the API base URL
+    return `${API_URL.replace("/api", "")}${filePath}`;
+  };
+
   const getMarksColor = (percentage) => {
     if (percentage >= 80) return "text-green-600";
     if (percentage >= 60) return "text-blue-600";
@@ -426,6 +446,65 @@ const AssignedGroupsList = ({ projects = [], loadProjects, token }) => {
                   />
                   <p className="text-sm text-amber-700 dark:text-amber-400">
                     Student hasn't submitted their project link yet.
+                  </p>
+                </div>
+              )}
+              {/* Demo Video Link - */}
+              {getDemoVideoLink(selectedProject) && (
+                <div className="bg-purple-50 dark:bg-purple-900/10 p-4 sm:p-5 rounded-xl border border-purple-200">
+                  <h3 className="font-bold text-sm mb-2 text-purple-700 dark:text-purple-400 flex items-center gap-2">
+                    Demo Video Link
+                  </h3>
+                  <a
+                    href={getDemoVideoLink(selectedProject)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-teal hover:underline break-all flex items-center gap-2 text-sm"
+                  >
+                    <ExternalLink size={14} />
+                    Watch Demo Video
+                  </a>
+                </div>
+              )}
+
+              {/* Demo Video File Upload */}
+              {getDemoVideoFile(selectedProject) && (
+                <div className="bg-purple-50 dark:bg-purple-900/10 p-4 sm:p-5 rounded-xl border border-purple-200">
+                  <h3 className="font-bold text-sm mb-2 text-purple-700 dark:text-purple-400 flex items-center gap-2">
+                     Demo Video File
+                  </h3>
+                  <a
+                    href={getFullFileUrl(getDemoVideoFile(selectedProject))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-teal hover:underline break-all flex items-center gap-2 text-sm"
+                  >
+                    <ExternalLink size={14} />
+                    Download/Play Video
+                  </a>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Click the link above to view the uploaded demo video
+                  </p>
+                </div>
+              )}
+
+              {/* Thesis Report  */}
+              {getReportFile(selectedProject) && (
+                <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 sm:p-5 rounded-xl border border-indigo-200">
+                  <h3 className="font-bold text-sm mb-2 text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
+                    <FileText size={16} /> Thesis Report
+                  </h3>
+                  <a
+                    href={getFullFileUrl(getReportFile(selectedProject))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-teal hover:underline break-all flex items-center gap-2 text-sm"
+                  >
+                    <ExternalLink size={14} />
+                    Download Report (PDF/DOCX)
+                  </a>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Click to download the student's thesis report
                   </p>
                 </div>
               )}

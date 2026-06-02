@@ -4,18 +4,23 @@ import {
   Clock,
   Send,
   AlertCircle,
+  Download,
   Github,
+  Globe,
   ExternalLink,
   UserCheck,
   Calendar,
   GraduationCap,
+  Package,
   PartyPopper,
   Trophy,
   FileText,
   Upload,
+  Video,
   X,
   Star,
   PercentCircle,
+  Presentation,
 } from "lucide-react";
 import Layout from "../../layouts/DashboardLayout";
 import API from "../../services/api";
@@ -39,6 +44,10 @@ const StudentDashboard = () => {
   const [rejectedDeadlineInfo, setRejectedDeadlineInfo] = useState(null);
   const [titleAvailable, setTitleAvailable] = useState(null);
   const [checkingTitle, setCheckingTitle] = useState(false);
+  const [demoVideoLink, setDemoVideoLink] = useState("");
+  const [demoVideoFile, setDemoVideoFile] = useState(null);
+  const [reportFile, setReportFile] = useState(null);
+  const [uploadingProject, setUploadingProject] = useState(false);
 
   useEffect(() => {
     const loadAll = async () => {
@@ -57,10 +66,12 @@ const StudentDashboard = () => {
         setTitleAvailable(null);
         return;
       }
-      
+
       setCheckingTitle(true);
       try {
-        const res = await API.get(`/proposals/check-title?title=${encodeURIComponent(proposalData.title)}`);
+        const res = await API.get(
+          `/proposals/check-title?title=${encodeURIComponent(proposalData.title)}`,
+        );
         setTitleAvailable(res.data.available);
         if (!res.data.available) {
           toast.warning(res.data.message);
@@ -71,7 +82,7 @@ const StudentDashboard = () => {
         setCheckingTitle(false);
       }
     };
-    
+
     const timeoutId = setTimeout(checkTitle, 500);
     return () => clearTimeout(timeoutId);
   }, [proposalData.title]);
@@ -227,13 +238,17 @@ const StudentDashboard = () => {
       ];
 
       if (!allowedExtensions.includes(fileExtension)) {
-        toast.error(`Invalid file type: .${fileExtension}. Only PDF, DOC, DOCX, and TXT files are allowed`);
+        toast.error(
+          `Invalid file type: .${fileExtension}. Only PDF, DOC, DOCX, and TXT files are allowed`,
+        );
         e.target.value = "";
         return;
       }
 
       if (!allowedMimeTypes.includes(file.type)) {
-        toast.error(`Invalid file format. Please upload a valid PDF, DOC, DOCX, or TXT file`);
+        toast.error(
+          `Invalid file format. Please upload a valid PDF, DOC, DOCX, or TXT file`,
+        );
         e.target.value = "";
         return;
       }
@@ -241,6 +256,74 @@ const StudentDashboard = () => {
       setProposalFile(file);
       toast.success(`File "${file.name}" selected successfully`);
     }
+  };
+
+  // Handle Demo Video File Change
+  const handleDemoVideoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 100 * 1024 * 1024) {
+        toast.error("Video file size must be less than 100MB");
+        e.target.value = "";
+        return;
+      }
+
+      const fileExtension = file.name.split(".").pop().toLowerCase();
+      const allowedExtensions = ["mp4", "mov", "avi", "mkv", "webm"];
+
+      if (!allowedExtensions.includes(fileExtension)) {
+        toast.error(
+          `Invalid video format: .${fileExtension}. Only MP4, MOV, AVI, MKV, WEBM allowed`,
+        );
+        e.target.value = "";
+        return;
+      }
+
+      setDemoVideoFile(file);
+      toast.success(`Video "${file.name}" selected successfully`);
+    }
+  };
+
+  // Handle Report File Change
+  const handleReportFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error("Report file size must be less than 20MB");
+        e.target.value = "";
+        return;
+      }
+
+      const fileExtension = file.name.split(".").pop().toLowerCase();
+      const allowedExtensions = ["pdf", "doc", "docx"];
+
+      if (!allowedExtensions.includes(fileExtension)) {
+        toast.error(
+          `Invalid file format: .${fileExtension}. Only PDF, DOC, DOCX allowed`,
+        );
+        e.target.value = "";
+        return;
+      }
+
+      setReportFile(file);
+      toast.success(`Report "${file.name}" selected successfully`);
+    }
+  };
+
+  // Remove Demo Video File
+  const removeDemoVideoFile = () => {
+    setDemoVideoFile(null);
+    const fileInput = document.getElementById("demo-video-input");
+    if (fileInput) fileInput.value = "";
+    toast.info("Video file removed");
+  };
+
+  // Remove Report File
+  const removeReportFile = () => {
+    setReportFile(null);
+    const fileInput = document.getElementById("report-file-input");
+    if (fileInput) fileInput.value = "";
+    toast.info("Report file removed");
   };
 
   const removeFile = () => {
@@ -254,16 +337,24 @@ const StudentDashboard = () => {
     e.preventDefault();
 
     const isRejectedResubmission = proposal && proposal.status === "rejected";
-    
+
     if (!isRejectedResubmission) {
       if (!proposalData.title.trim()) {
         toast.error("Please enter a project title");
         return;
       }
-      
-      const genericTitles = ['project', 'fyp', 'final year project', 'my project', 'untitled'];
+
+      const genericTitles = [
+        "project",
+        "fyp",
+        "final year project",
+        "my project",
+        "untitled",
+      ];
       if (genericTitles.includes(proposalData.title.toLowerCase().trim())) {
-        toast.warning("Please use a more specific and descriptive project title");
+        toast.warning(
+          "Please use a more specific and descriptive project title",
+        );
         return;
       }
     }
@@ -274,7 +365,9 @@ const StudentDashboard = () => {
 
     if (isRejectedResubmission) {
       if (!rejectedDeadlineInfo?.deadline) {
-        toast.warning("Teacher has not set a resubmission deadline yet. Please wait.");
+        toast.warning(
+          "Teacher has not set a resubmission deadline yet. Please wait.",
+        );
         return;
       }
       if (rejectedDeadlineInfo?.isPassed) {
@@ -283,7 +376,9 @@ const StudentDashboard = () => {
       }
     } else {
       if (proposalDeadlineInfo?.deadline === null) {
-        toast.warning("Teacher has not set a proposal deadline yet. Please wait.");
+        toast.warning(
+          "Teacher has not set a proposal deadline yet. Please wait.",
+        );
         return;
       }
       if (proposalDeadlineInfo?.isPassed) {
@@ -327,20 +422,23 @@ const StudentDashboard = () => {
       );
     } catch (err) {
       console.error("Submission error:", err);
-      
+
       if (err.response?.data?.duplicate) {
         toast.error(
           <div>
-            <strong>Duplicate Proposal Detected!</strong><br />
+            <strong>Duplicate Proposal Detected!</strong>
+            <br />
             {err.response.data.message}
           </div>,
-          { autoClose: 8000 }
+          { autoClose: 8000 },
         );
-        const titleInput = document.querySelector('input[placeholder="e.g., AI Powered Health Assistant"]');
+        const titleInput = document.querySelector(
+          'input[placeholder="e.g., AI Powered Health Assistant"]',
+        );
         if (titleInput) {
-          titleInput.classList.add('border-red-500', 'ring-red-500');
+          titleInput.classList.add("border-red-500", "ring-red-500");
           setTimeout(() => {
-            titleInput.classList.remove('border-red-500', 'ring-red-500');
+            titleInput.classList.remove("border-red-500", "ring-red-500");
           }, 3000);
         }
       } else {
@@ -352,38 +450,117 @@ const StudentDashboard = () => {
     }
   };
 
-  const handleSourceSubmit = async () => {
-    if (!sourceLink) {
-      toast.error("Please provide a GitHub or project link");
+  // FINAL PROJECT SUBMIT HANDLER WITH VALIDATION
+  const handleFinalProjectSubmit = async (e) => {
+    e.preventDefault();
+    
+    // VALIDATION: Check if all required fields are provided
+    if (!sourceLink || sourceLink.trim() === "") {
+      toast.error(" GitHub Repository Link is required!");
+      document.getElementById("github-link")?.focus();
       return;
     }
-
-    if (!isSupervisorAssigned()) {
-      toast.warning("Waiting for admin to assign a supervisor.");
+    
+    if (!reportFile) {
+      toast.error("Project Report (PDF/DOCX) is required!");
       return;
     }
-
-    if (!isDeadlineSet()) {
-      toast.warning("Teacher has not set a deadline yet. Please wait.");
+    
+    if (!demoVideoLink && !demoVideoFile) {
+      toast.error(" Either Demo Video Link OR Demo Video File is required!");
       return;
     }
-
-    if (isDeadlinePassed()) {
-      toast.error(
-        "Project submission deadline has passed! You cannot submit now.",
-      );
+    
+    // Validate GitHub URL format
+    const githubRegex = /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+/;
+    if (!githubRegex.test(sourceLink)) {
+      toast.error("Please enter a valid GitHub repository URL!");
       return;
     }
-
+    
+    // Validate video link format if provided
+    if (demoVideoLink && demoVideoLink.trim() !== "") {
+      const videoUrlRegex = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be|vimeo\.com)/;
+      if (!videoUrlRegex.test(demoVideoLink)) {
+        toast.warning(" Please enter a valid YouTube or Vimeo URL for demo video link");
+        // Don't return - they might still upload a file
+      }
+    }
+    
+    setUploadingProject(true);
+    setUploadProgress(0);
+    
     try {
-      const { data } = await API.put("/projects/submit-source", { sourceLink });
-      setProject(data.project);
-      toast.success("Final project link submitted successfully!");
+      const formData = new FormData();
+      formData.append("sourceLink", sourceLink);
+      
+      if (demoVideoLink) {
+        formData.append("demoVideoLink", demoVideoLink);
+      }
+      
+      if (demoVideoFile) {
+        formData.append("demoVideoFile", demoVideoFile);
+      }
+      
+      if (reportFile) {
+        formData.append("reportFile", reportFile);
+      }
+      
+      const { data } = await API.post("/projects/submit", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
+      });
+      
+      toast.success("Project submitted successfully!");
+      
+      // Reset form
       setSourceLink("");
-      fetchData();
+      setDemoVideoLink("");
+      setDemoVideoFile(null);
+      setReportFile(null);
+      
+      // Refresh data
+      await fetchData();
+      
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to submit link");
+      console.error("Submission error:", err);
+      toast.error(err.response?.data?.message || "Failed to submit project");
+    } finally {
+      setUploadingProject(false);
+      setUploadProgress(0);
     }
+  };
+
+  const getEmbeddedVideoUrl = (url) => {
+    if (!url) return '';
+    
+    // Regular YouTube URL
+    const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/;
+    const youtubeMatch = url.match(youtubeRegex);
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+    
+    // YouTube Shorts
+    const shortsRegex = /youtube\.com\/shorts\/([^?]+)/;
+    const shortsMatch = url.match(shortsRegex);
+    if (shortsMatch) {
+      return `https://www.youtube.com/embed/${shortsMatch[1]}`;
+    }
+    
+    // Vimeo
+    const vimeoRegex = /vimeo\.com\/(\d+)/;
+    const vimeoMatch = url.match(vimeoRegex);
+    if (vimeoMatch) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+    
+    return url;
   };
 
   if (loading) {
@@ -400,30 +577,30 @@ const StudentDashboard = () => {
     <Layout>
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Global Deadline Banner */}
-     {/* Global Deadline Banner - Only show if not evaluated, not submitted, and deadline exists */}
-{!isProjectEvaluated() && !isProjectSubmitted() &&
-  deadline &&
-  (deadline.proposalDeadline || deadline.projectDeadline) && (
-    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200">
-      <div className="flex items-center gap-3">
-        <Calendar size={20} className="text-amber-600" />
-        <div className="text-sm text-amber-700 dark:text-amber-400">
-          {deadline.proposalDeadline && (
-            <p>
-              Proposal Deadline:{" "}
-              {new Date(deadline.proposalDeadline).toLocaleString()}
-            </p>
+        {!isProjectEvaluated() &&
+          !isProjectSubmitted() &&
+          deadline &&
+          (deadline.proposalDeadline || deadline.projectDeadline) && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200">
+              <div className="flex items-center gap-3">
+                <Calendar size={20} className="text-amber-600" />
+                <div className="text-sm text-amber-700 dark:text-amber-400">
+                  {deadline.proposalDeadline && (
+                    <p>
+                      Proposal Deadline:{" "}
+                      {new Date(deadline.proposalDeadline).toLocaleString()}
+                    </p>
+                  )}
+                  {deadline.projectDeadline && (
+                    <p>
+                      Project Deadline:{" "}
+                      {new Date(deadline.projectDeadline).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
-          {deadline.projectDeadline && (
-            <p>
-              Project Deadline:{" "}
-              {new Date(deadline.projectDeadline).toLocaleString()}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  )}
 
         {/* CASE 1: NO PROPOSAL YET */}
         {!proposal && (
@@ -505,11 +682,14 @@ const StudentDashboard = () => {
                     }
                     placeholder="e.g., AI Powered Health Assistant"
                     className={`w-full bg-slate-50 dark:bg-brand-dark p-4 rounded-2xl outline-none focus:ring-2 ring-brand-teal dark:text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
-                      titleAvailable === false ? 'border-2 border-red-500' : ''
+                      titleAvailable === false ? "border-2 border-red-500" : ""
                     }`}
                     value={proposalData.title}
                     onChange={(e) =>
-                      setProposalData({ ...proposalData, title: e.target.value })
+                      setProposalData({
+                        ...proposalData,
+                        title: e.target.value,
+                      })
                     }
                   />
                   {checkingTitle && (
@@ -518,7 +698,10 @@ const StudentDashboard = () => {
                     </div>
                   )}
                   {titleAvailable === false && (
-                    <p className="text-red-500 text-xs mt-1">This title is already taken or very similar to an existing proposal</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      This title is already taken or very similar to an existing
+                      proposal
+                    </p>
                   )}
                 </div>
               </div>
@@ -895,51 +1078,53 @@ const StudentDashboard = () => {
         )}
 
         {/* CASE 4: PROPOSAL APPROVED - Not yet submitted */}
-       {proposal &&
+        {proposal &&
           proposal.status === "approved" &&
           !isProjectSubmitted() &&
           !isProjectEvaluated() && (
-            <div className="bg-white dark:bg-brand-muted p-10 rounded-[2.5rem] shadow-xl border border-teal-500/20">
-              <div className="flex items-center gap-4 mb-8">
+            <div className="bg-white dark:bg-brand-muted p-8 rounded-2xl shadow-xl border border-teal-500/20">
+              <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
                   <CheckCircle size={24} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">
+                  <h2 className="text-2xl font-black dark:text-white">
                     Proposal Approved!
                   </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">
+                    Submit your final project deliverables below
+                  </p>
                 </div>
               </div>
 
+              {/* Supervisor Check */}
               {!isSupervisorAssigned() && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl mb-6 border border-amber-200">
+                <div className="bg-amber-50 p-4 rounded-xl mb-6">
                   <div className="flex items-center gap-3">
                     <UserCheck size={20} className="text-amber-600" />
                     <div>
-                      <p className="font-bold text-amber-700 dark:text-amber-400">
-                        Supervisor Not Assigned Yet
+                      <p className="font-bold text-amber-700">
+                        Waiting for Supervisor Assignment
                       </p>
-                      <p className="text-sm text-amber-600 dark:text-amber-500">
-                        Please wait for admin to assign a supervisor.
+                      <p className="text-sm text-amber-600">
+                        An administrator will assign a supervisor soon.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Deadline Info */}
               {isSupervisorAssigned() && !isDeadlineSet() && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl mb-6 border border-amber-200">
+                <div className="bg-amber-50 p-4 rounded-xl mb-6">
                   <div className="flex items-center gap-3">
                     <Calendar size={20} className="text-amber-600" />
                     <div>
-                      <p className="font-bold text-amber-700 dark:text-amber-400">
+                      <p className="font-bold text-amber-700">
                         Deadline Not Set Yet
                       </p>
-                      <p className="text-sm text-amber-600 dark:text-amber-500">
-                         Your teacher will set a submission deadline. Please wait.
-                      </p>
-                      <p className="text-xs text-amber-500 mt-2">
-                        Use this time to prepare your final project!
+                      <p className="text-sm text-amber-600">
+                        Your teacher will set a submission deadline.
                       </p>
                     </div>
                   </div>
@@ -949,15 +1134,15 @@ const StudentDashboard = () => {
               {isSupervisorAssigned() &&
                 isDeadlineSet() &&
                 !isDeadlinePassed() && (
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl mb-6 border border-green-200">
+                  <div className="bg-green-50 p-4 rounded-xl mb-6">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-3">
                         <Calendar size={20} className="text-green-600" />
                         <div>
-                          <p className="font-bold text-green-700 dark:text-green-400">
+                          <p className="font-bold text-green-700">
                             Submission Deadline
                           </p>
-                          <p className="text-sm text-green-600 dark:text-green-500">
+                          <p className="text-sm text-green-600">
                             {projectDeadline
                               ? new Date(projectDeadline).toLocaleString()
                               : "Loading..."}
@@ -967,7 +1152,7 @@ const StudentDashboard = () => {
                       {projectDeadline &&
                         new Date(projectDeadline) > new Date() && (
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-green-600">
+                            <div className="text-xl font-bold text-green-600">
                               {Math.ceil(
                                 (new Date(projectDeadline) - new Date()) /
                                   (1000 * 60 * 60 * 24),
@@ -982,65 +1167,191 @@ const StudentDashboard = () => {
                   </div>
                 )}
 
-              {isSupervisorAssigned() &&
-                isDeadlineSet() &&
-                isDeadlinePassed() && (
-                  <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl mb-6 border border-red-200">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle size={20} className="text-red-500" />
-                      <div>
-                        <p className="font-bold text-red-700 dark:text-red-400">
-                          Deadline Passed!
-                        </p>
-                        <p className="text-sm text-red-600 dark:text-red-500">
-                          The submission deadline has passed. You cannot submit
-                          now. Contact your teacher.
-                        </p>
-                      </div>
-                    </div>
+              {/* Upload Progress Bar */}
+              {uploadingProject && uploadProgress > 0 && (
+                <div className="mb-6">
+                  <div className="w-full bg-slate-200 dark:bg-brand-dark rounded-full h-2">
+                    <div
+                      className="bg-brand-teal h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
                   </div>
-                )}
+                  <p className="text-xs text-center mt-1 text-slate-500">
+                    Uploading: {uploadProgress}%
+                  </p>
+                </div>
+              )}
 
-              <div className="space-y-6">
-                <div className="p-6 bg-slate-50 dark:bg-brand-dark rounded-2xl border-2 border-transparent focus-within:border-brand-teal transition-all">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
-                    GitHub / Project Link
+              {/* Submission Form */}
+              <form onSubmit={handleFinalProjectSubmit} className="space-y-6">
+                {/* GitHub Link - REQUIRED */}
+                <div className="border rounded-xl p-4">
+                  <label className="text-sm font-bold text-slate-600 dark:text-slate-300 block mb-2">
+                    <Github size={16} className="inline mr-2" /> 
+                    GitHub Repository Link <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex items-center gap-3">
-                    <Github className="text-slate-400" size={20} />
-                    <input
-                      type="url"
-                      disabled={
-                        !isSupervisorAssigned() ||
-                        !isDeadlineSet() ||
-                        isDeadlinePassed()
-                      }
-                      placeholder="https://github.com/your-username/project-repo"
-                      className="bg-transparent w-full outline-none font-bold dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      value={sourceLink}
-                      onChange={(e) => setSourceLink(e.target.value)}
-                    />
-                  </div>
+                  <input
+                    type="url"
+                    id="github-link"
+                    placeholder="https://github.com/your-username/project-repo"
+                    className="w-full p-3 rounded-lg border focus:ring-2 ring-brand-teal outline-none dark:bg-brand-dark"
+                    value={sourceLink}
+                    onChange={(e) => setSourceLink(e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Required - Must be a valid GitHub repository URL
+                  </p>
+                </div>
+
+                {/* Demo Video Link */}
+                <div className="border rounded-xl p-4">
+                  <label className="text-sm font-bold text-slate-600 dark:text-slate-300 block mb-2">
+                    <Video size={16} className="inline mr-2" /> 
+                    Demo Video Link (YouTube/Vimeo) <span className="text-amber-500">(Either Link OR File)</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                    className="w-full p-3 rounded-lg border focus:ring-2 ring-brand-teal outline-none dark:bg-brand-dark"
+                    value={demoVideoLink}
+                    onChange={(e) => setDemoVideoLink(e.target.value)}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Optional if uploading video file below
+                  </p>
+                </div>
+
+                {/* Demo Video File Upload */}
+                <div className="border rounded-xl p-4">
+                  <label className="text-sm font-bold text-slate-600 dark:text-slate-300 block mb-2">
+                     Upload Demo Video <span className="text-amber-500">(Either Link OR File)</span>
+                  </label>
+                  <input
+                    type="file"
+                    id="demo-video-input"
+                    accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,video/x-matroska"
+                    onChange={handleDemoVideoChange}
+                    className="w-full p-2"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Max size: 100MB. Supported: MP4, MOV, AVI, MKV, WEBM
+                  </p>
+                  {demoVideoFile && (
+                    <div className="mt-2 bg-slate-50 dark:bg-brand-dark rounded-lg p-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Video size={16} className="text-brand-teal" />
+                        <span className="text-sm">{demoVideoFile.name}</span>
+                        <span className="text-xs text-slate-400">
+                          ({(demoVideoFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeDemoVideoFile}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Thesis Report Upload - REQUIRED */}
+                <div className="border rounded-xl p-4">
+                  <label className="text-sm font-bold text-slate-600 dark:text-slate-300 block mb-2">
+                    <FileText size={16} className="inline mr-2" /> 
+                    Thesis Report (PDF/DOCX) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    id="report-file-input"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleReportFileChange}
+                    className="w-full p-2"
+                    required
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Required - Max size: 20MB. Supported: PDF, DOC, DOCX
+                  </p>
+                  {reportFile && (
+                    <div className="mt-2 bg-slate-50 dark:bg-brand-dark rounded-lg p-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-brand-teal" />
+                        <span className="text-sm">{reportFile.name}</span>
+                        <span className="text-xs text-slate-400">
+                          ({(reportFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeReportFile}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Required Fields Summary */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <p className="text-xs text-blue-700 dark:text-blue-400">
+                    <span className="font-bold">Required Fields:</span> GitHub Link, Project Report
+                    <br />
+                    <span className="font-bold">Video Requirement:</span> Either a Video Link OR Uploaded Video File
+                  </p>
                 </div>
 
                 <button
-                  onClick={handleSourceSubmit}
+                  type="submit"
                   disabled={
                     !isSupervisorAssigned() ||
                     !isDeadlineSet() ||
-                    isDeadlinePassed()
+                    isDeadlinePassed() ||
+                    uploadingProject
                   }
-                  className="w-full bg-brand-teal text-white py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-teal-600 shadow-lg shadow-teal-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-brand-teal text-white py-3 rounded-xl font-bold hover:bg-teal-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  <Send size={20} /> Submit Final Project
+                  {uploadingProject ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} /> Submit Final Project
+                    </>
+                  )}
                 </button>
+              </form>
+
+              {/* Status Messages */}
+              <div className="text-center mt-4">
+                {!isSupervisorAssigned() && (
+                  <p className="text-sm text-amber-600">
+                    ⏳ Waiting for supervisor assignment...
+                  </p>
+                )}
+                {isSupervisorAssigned() && !isDeadlineSet() && (
+                  <p className="text-sm text-amber-600">
+                     Waiting for teacher to set deadline...
+                  </p>
+                )}
+                {isSupervisorAssigned() &&
+                  isDeadlineSet() &&
+                  !isDeadlinePassed() && (
+                    <p className="text-sm text-green-600">
+                     Ready to submit! Complete all required fields above.
+                    </p>
+                  )}
               </div>
             </div>
           )}
 
         {/* CASE 5: PROJECT SUBMITTED - Waiting for evaluation */}
         {isProjectSubmitted() && !isProjectEvaluated() && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/10 p-8 rounded-[2rem] border border-emerald-200 space-y-4">
+          <div className="bg-emerald-50 dark:bg-emerald-900/10 p-8 rounded-[2rem] border border-emerald-200 space-y-6">
             <div className="flex items-center gap-4">
               <CheckCircle className="text-emerald-600" size={32} />
               <div>
@@ -1048,28 +1359,157 @@ const StudentDashboard = () => {
                   Project Submitted Successfully!
                 </h2>
                 <p className="text-emerald-600/70 dark:text-emerald-400/70">
-                  Your project is under evaluation.
+                  Your project is under evaluation by the supervisor.
                 </p>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-brand-dark p-4 rounded-xl">
-              <p className="text-sm font-bold mb-2">Submitted Link:</p>
-              <a
-                href={project.sourceLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand-teal hover:underline flex items-center gap-2 break-all"
-              >
-                <ExternalLink size={16} />
-                {project.sourceLink}
-              </a>
+            {/* All Project Deliverables Section */}
+            <div className="bg-white dark:bg-brand-dark p-6 rounded-xl space-y-6">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Package size={20} />
+                Submitted Deliverables
+              </h3>
+              
+              {/* 1. Proposal Reference */}
+              {project?.proposal && (
+                <div className="border-l-4 border-brand-teal pl-4">
+                  <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">Proposal</p>
+                  <p className="font-medium">{project.proposal.title || 'Proposal submitted'}</p>
+                </div>
+              )}
+              
+              {/* 2. Source Code (GitHub) */}
+              {project?.sourceLink && (
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
+                    <Github size={16} />
+                    GitHub / Source Code
+                  </p>
+                  <a
+                    href={project.sourceLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-teal hover:underline flex items-center gap-2 break-all font-mono text-sm"
+                  >
+                    <ExternalLink size={16} />
+                    {project.sourceLink}
+                  </a>
+                </div>
+              )}
+
+              {/* 3. Demo Video Link */}
+              {project?.demoVideoLink && (
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
+                    <Video size={16} />
+                    Demo Video Link
+                  </p>
+                  <a
+                    href={project.demoVideoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-teal hover:underline flex items-center gap-2 break-all"
+                  >
+                    <ExternalLink size={16} />
+                    {project.demoVideoLink}
+                  </a>
+                  {project.demoVideoLink.includes('youtube.com') && (
+                    <div className="mt-3 relative w-full aspect-video rounded-lg overflow-hidden">
+                      <iframe
+                        src={getEmbeddedVideoUrl(project.demoVideoLink)}
+                        title="Demo Video"
+                        className="absolute top-0 left-0 w-full h-full"
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 4. Demo Video File (Uploaded) */}
+              {project?.demoVideoFile && (
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
+                    <Video size={16} />
+                    Demo Video File
+                  </p>
+                  <video
+                    controls
+                    className="w-full rounded-lg"
+                    src={project.demoVideoFile}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                  <a
+                    href={project.demoVideoFile}
+                    download
+                    className="text-brand-teal hover:underline flex items-center gap-2 mt-2 text-sm"
+                  >
+                    <Download size={14} />
+                    Download Video
+                  </a>
+                </div>
+              )}
+
+              {/* 5. Project Report File */}
+              {project?.reportFile && (
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
+                    <FileText size={16} />
+                    Project Report / Documentation
+                  </p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <a
+                      href={project.reportFile}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-teal hover:underline flex items-center gap-2"
+                    >
+                      <FileText size={16} />
+                      View Report
+                    </a>
+                    <a
+                      href={project.reportFile}
+                      download
+                      className="text-gray-600 dark:text-gray-400 hover:text-brand-teal flex items-center gap-2 text-sm"
+                    >
+                      <Download size={14} />
+                      Download
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Submitted Date */}
+              {project?.createdAt && (
+                <div className="text-xs text-gray-400 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <span>Submitted on: {new Date(project.createdAt).toLocaleDateString()} at {new Date(project.createdAt).toLocaleTimeString()}</span>
+                  <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-semibold">
+                    Pending Review
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Evaluation Status Info */}
+            <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-200">
+              <div className="flex items-start gap-3">
+                <Clock size={20} className="text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-800 dark:text-amber-400">Evaluation Pending</p>
+                  <p className="text-sm text-amber-700/70 dark:text-amber-400/70">
+                    Your supervisor has been notified and will evaluate your project soon.
+                    You'll receive grades and feedback once the evaluation is complete.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* CASE 6: PROJECT EVALUATED - Final Result */}
-        {isProjectEvaluated() && project.grade && (
+        {isProjectEvaluated() && project?.grade && (
           <div className="relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-teal-300 via-emerald-500 to-teal-600 rounded-2xl"></div>
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 animate-pulse"></div>

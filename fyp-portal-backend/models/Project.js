@@ -15,6 +15,18 @@ const projectSchema = new mongoose.Schema(
     supervisor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     filePath: { type: String },
     sourceLink: { type: String },
+    demoVideoLink: {
+      type: String,
+      default: null
+    },
+    demoVideoFile: {
+      type: String,
+      default: null
+    },
+    reportFile: {
+      type: String,
+      default: null
+    },
     grade: { type: String },
     marks: { type: Number, default: null },
     obtainedMarks: { type: Number, default: null },

@@ -4,6 +4,8 @@ const Proposal = require("../models/Proposal");
 const Project = require("../models/Project");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { sendPasswordResetEmail, sendPasswordResetSuccessEmail } = require("../config/email");
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -172,7 +174,7 @@ exports.getProfile = async (req, res) => {
       };
     }
 
-    // ADD THIS CODE HERE - For student-specific stats
+    //  For student-specific stats
     if (user.role === "student") {
       const proposal = await Proposal.findOne({ student: user._id });
       const project = await Project.findOne({ student: user._id });
@@ -300,6 +302,91 @@ exports.changePassword = async (req, res) => {
     res.json({ message: "Password changed successfully" });
   } catch (error) {
     console.error("Change password error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Forgot Password - Send reset email
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: "No user found with this email address" });
+    }
+    
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetExpires = Date.now() + 3600000; // 1 hour
+    
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetExpires;
+    await user.save();
+    
+    // Create reset URL
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password/${resetToken}`;
+    
+    // Send email
+    const emailResult = await sendPasswordResetEmail(user.email, resetUrl, user.name);
+    
+    if (!emailResult.success) {
+      console.error("Email sending failed:", emailResult.error);
+      return res.status(500).json({ 
+        message: "Failed to send reset email. Please try again later." 
+      });
+    }
+    
+    res.json({ 
+      message: "Password reset link has been sent to your email address" 
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Reset Password - Set new password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token and new password are required" });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+    
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+    
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    
+    // Send confirmation email
+    await sendPasswordResetSuccessEmail(user.email, user.name);
+    
+    res.json({ message: "Password has been reset successfully" });
+  } catch (error) {
+    console.error("Reset password error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

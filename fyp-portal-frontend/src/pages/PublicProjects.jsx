@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"; 
-import { Search, ExternalLink, BookOpen, User, Calendar, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ExternalLink, BookOpen, User, Calendar, ArrowLeft, ChevronLeft, ChevronRight, Video, FileText, Github } from "lucide-react";
 import API from "../services/api";
 import { toast } from "react-toastify";
 
@@ -48,7 +48,6 @@ const PublicProject = () => {
         
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          {/* Back Button and Title */}
           <div className="flex items-center gap-6">
             <button
               onClick={() => navigate(-1)}  
@@ -68,7 +67,6 @@ const PublicProject = () => {
             </div>
           </div>
 
-          {/* Search Box */}
           <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
@@ -80,7 +78,6 @@ const PublicProject = () => {
           </div>
         </div>
 
-        {/* Result Count */}
         {!loading && (
           <div className="text-sm text-slate-500 dark:text-slate-400">
             Found <span className="font-semibold text-brand-teal">{filteredProjects.length}</span> projects
@@ -124,17 +121,34 @@ const PublicProject = () => {
                     </div>
                   )}
 
-                  {(project.githubLink || project.sourceLink) && (
-                    <a
-                      href={project.githubLink || project.sourceLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 text-brand-teal font-black hover:underline"
-                    >
-                      <ExternalLink size={16} />
-                      View Repository
-                    </a>
-                  )}
+                  {/* Links Section */}
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {/* GitHub Link */}
+                    {(project.githubLink || project.sourceLink) && (
+                      <a
+                        href={project.githubLink || project.sourceLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-brand-teal font-bold hover:underline text-sm"
+                      >
+                        <Github size={14} />
+                        Repository
+                      </a>
+                    )}
+
+                    {/* Demo Video Link */}
+                    {project.demoVideoLink && (
+                      <a
+                        href={project.demoVideoLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-purple-600 font-bold hover:underline text-sm"
+                      >
+                        <Video size={14} />
+                        Demo Video
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
 

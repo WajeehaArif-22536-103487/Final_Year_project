@@ -3,29 +3,25 @@ const Proposal = require("../models/Proposal");
 const User = require("../models/User");
 const Deadline = require("../models/Deadline");
 
-// Student submits final project source code/link
+// Student submits final project source code/link, demo video, and report
 exports.submitSourceCode = async (req, res) => {
   try {
-    const { sourceLink } = req.body;
+    const { sourceLink, demoVideoLink } = req.body;
     const studentId = req.user.id;
-
-    if (!sourceLink) {
-      return res.status(400).json({ message: "Source link is required" });
-    }
 
     // Find the student's project
     const project = await Project.findOne({ student: studentId });
 
     if (!project) {
-      return res
-        .status(404)
-        .json({
-          message: "Project not found. Make sure your proposal is approved.",
-        });
+      return res.status(404).json({
+        message: "Project not found. Make sure your proposal is approved.",
+      });
     }
 
-    // Update project
-    project.sourceLink = sourceLink;
+    // Update project with new fields
+    if (sourceLink) project.sourceLink = sourceLink;
+    if (demoVideoLink) project.demoVideoLink = demoVideoLink;
+    
     project.status = "submitted";
     await project.save();
 
@@ -41,10 +37,11 @@ exports.submitSourceCode = async (req, res) => {
   }
 };
 
-// Student submits final project with file (PDF)
+// Student submits final project with multiple files (PDF report + video)
 exports.submitFinalProject = async (req, res) => {
   try {
     const studentId = req.user.id;
+    const { sourceLink, demoVideoLink } = req.body;
 
     // Find the student's project
     const project = await Project.findOne({ student: studentId });
@@ -53,9 +50,19 @@ exports.submitFinalProject = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    if (req.file) {
-      project.filePath = `/uploads/projects/${req.file.filename}`;
+    // Handle file uploads
+    if (req.files) {
+      if (req.files.reportFile) {
+        project.reportFile = `/uploads/reports/${req.files.reportFile[0].filename}`;
+      }
+      if (req.files.demoVideo) {
+        project.demoVideoFile = `/uploads/videos/${req.files.demoVideo[0].filename}`;
+      }
     }
+
+    // Handle links
+    if (sourceLink) project.sourceLink = sourceLink;
+    if (demoVideoLink) project.demoVideoLink = demoVideoLink;
 
     project.status = "submitted";
     await project.save();
@@ -70,7 +77,7 @@ exports.submitFinalProject = async (req, res) => {
   }
 };
 
-//// Get student's own project
+// Get student's own project
 exports.getMyProject = async (req, res) => {
   try {
     const studentId = req.user.id;
@@ -82,11 +89,14 @@ exports.getMyProject = async (req, res) => {
       return res.status(200).json(null);
     }
 
-    // Ensure all mark fields are included
+    // Ensure all fields are included (ADDED demoVideoLink, demoVideoFile, reportFile)
     const responseData = {
       _id: project._id,
       title: project.title,
       sourceLink: project.sourceLink,
+      demoVideoLink: project.demoVideoLink,        // NEW
+      demoVideoFile: project.demoVideoFile,        // NEW
+      reportFile: project.reportFile,              // NEW
       grade: project.grade,
       obtainedMarks: project.obtainedMarks || project.marks,
       marks: project.marks,
@@ -97,8 +107,6 @@ exports.getMyProject = async (req, res) => {
       createdAt: project.createdAt,
       updatedAt: project.updatedAt
     };
-
-    console.log("Sending project data:", responseData);
     res.json(responseData);
   } catch (error) {
     console.error("Get my project error:", error);
@@ -116,7 +124,23 @@ exports.getTeacherProjects = async (req, res) => {
       .populate("proposal", "title description")
       .sort({ createdAt: -1 });
     
-    res.json(projects);
+    // Format response to include new fields
+    const formattedProjects = projects.map(project => ({
+      _id: project._id,
+      title: project.proposal?.title,
+      description: project.proposal?.description,
+      sourceLink: project.sourceLink,
+      demoVideoLink: project.demoVideoLink,   
+      demoVideoFile: project.demoVideoFile,    
+      reportFile: project.reportFile,           
+      grade: project.grade,
+      teacherFeedback: project.teacherFeedback,
+      status: project.status,
+      student: project.student,
+      proposal: project.proposal
+    }));
+    
+    res.json(formattedProjects);
   } catch (error) {
     console.error("Get teacher projects error:", error);
     res.status(500).json({ message: "Server error" });

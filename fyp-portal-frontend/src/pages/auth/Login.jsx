@@ -254,14 +254,15 @@ function Login() {
                       <div className="text-right">
                         <button
                           type="button"
-                          onClick={() =>
-                            toast.info("Contact admin to reset password")
-                          }
+                          onClick={() => navigate("/forgot-password")}
                           className="text-sm text-white/50 hover:text-teal-400 transition-colors"
                         >
                           Forgot password?
                         </button>
                       </div>
+                      <p className="text-xs text-white/30 text-right mt-1">
+                        Password must be at least 6 characters
+                      </p>
 
                       {/* Submit Button */}
                       <motion.button

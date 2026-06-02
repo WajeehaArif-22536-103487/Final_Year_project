@@ -52,17 +52,25 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    program: { 
-      type: String, 
-      default: ""
+    program: {
+      type: String,
+      default: "",
     },
-    session: { 
-      type: String, 
-      default: "" 
+    session: {
+      type: String,
+      default: "",
     },
-    semester: { 
-      type: String, 
-      default: "" 
+    semester: {
+      type: String,
+      default: "",
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true },

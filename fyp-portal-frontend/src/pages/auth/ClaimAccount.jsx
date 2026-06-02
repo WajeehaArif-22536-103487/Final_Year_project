@@ -43,7 +43,17 @@ const ClaimAccount = () => {
   };
 
   const finalizeRegistration = async () => {
-    if (!creds.email || !creds.password) return toast.error("Please set email and password");
+    if (!creds.email || !creds.password) {
+      toast.error("Please fill all fields");
+      return;
+    }
+    
+    // Password validation - minimum 6 characters
+    if (creds.password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await API.post("/auth/register-student", { 
@@ -205,6 +215,7 @@ const ClaimAccount = () => {
                       </div>
                       <h2 className="text-xl font-bold text-white">Create Your Account</h2>
                       <p className="text-white/50 text-sm mt-1">Set your login credentials for {regNo}</p>
+                      <p className="text-xs text-white/30 mt-2">Password must be at least 6 characters</p>
                     </div>
 
                     <div className="space-y-4">
@@ -225,17 +236,38 @@ const ClaimAccount = () => {
                         <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                         <input
                           type="password"
-                          placeholder="Choose Password"
-                          className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50 transition-all outline-none"
+                          placeholder="Choose Password (min 6 characters)"
+                          className={`w-full pl-10 pr-4 py-3 bg-white/10 border rounded-xl text-white placeholder-white/40 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50 transition-all outline-none ${
+                            creds.password && creds.password.length < 6
+                              ? "border-red-400 ring-red-400/50"
+                              : creds.password && creds.password.length >= 6
+                              ? "border-green-400 ring-green-400/50"
+                              : "border-white/20"
+                          }`}
                           value={creds.password}
                           onChange={(e) => setCreds({ ...creds, password: e.target.value })}
                         />
                       </div>
+                      
+                      {/* Password strength indicator */}
+                      {creds.password && (
+                        <div className="mt-1">
+                          {creds.password.length < 6 ? (
+                            <p className="text-xs text-red-400">
+                               Password must be at least 6 characters (currently {creds.password.length})
+                            </p>
+                          ) : (
+                            <p className="text-xs text-green-400">
+                               Password strength: Good
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {/* Complete Registration Button */}
                       <motion.button 
                         onClick={finalizeRegistration} 
-                        disabled={loading}
+                        disabled={loading || (creds.password && creds.password.length < 6)}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center gap-2"
